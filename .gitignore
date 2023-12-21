@@ -1,3 +1,5 @@
-.env*
+.env
 .terraform/providers
-hello_world.zip
+*.zip
+*.tfstate*
+hashicorp
