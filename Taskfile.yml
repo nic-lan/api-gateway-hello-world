@@ -1,0 +1,23 @@
+version: '3'
+
+dotenv: ['.env', '{{.ENV}}/.env.', '{{.HOME}}/.env']
+
+tasks:
+  init:
+    cmds:
+    - terraform init
+  deploy:
+    cmds:
+    - terraform apply
+  destroy:
+    - terraform destroy
+
+  invoke-gateway:
+    cmds:
+    - curl "$(terraform output -raw base_url)/hello"
+
+  setup:
+    cmds:
+    - task: init
+    - task: deploy
+    - task: invoke-gateway
