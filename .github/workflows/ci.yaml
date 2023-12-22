@@ -1,18 +1,32 @@
-name: CI/CD
+name: CI
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: main
 
-
+defaults:
+  run:
+    working-directory: hello-world
 
 jobs:
   test:
-
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: hello-world
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install poetry
+      run: pipx install poetry
+    - uses: actions/setup-python@v5
+      with:
+        python-version-file: hello-world/.python-version
+        cache: 'poetry'
+        cache-dependency-path: hello-world/poetry.lock
+    - run: poetry install
+    - run: poetry run pytest
+
+  lint:
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
