@@ -45,7 +45,7 @@ resource "aws_lambda_function" "hello_world" {
   runtime = "python3.11"
   handler = "main.lambda_handler"
 
-  source_code_hash = data.archive_file.lambda_hello_world.output_base64sha256
+  source_code_hash =  filebase64sha256("${path.module}/hello-world.zip")
 
   role = aws_iam_role.lambda_exec.arn
 }

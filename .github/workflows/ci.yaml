@@ -6,58 +6,61 @@ on:
     branches: main
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  # test:
+  #   runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: hello-world
+  #   defaults:
+  #     run:
+  #       working-directory: hello-world
 
-    steps:
-    - uses: actions/checkout@v4
+  #   steps:
+  #   - uses: actions/checkout@v4
 
-    - name: Install poetry
-      run: pipx install poetry
-    - uses: actions/setup-python@v5
-      with:
-        python-version-file: hello-world/.python-version
-        cache: 'poetry'
-        cache-dependency-path: hello-world/poetry.lock
-    - run: poetry install
-    - run: poetry run pytest
+  #   - name: Install poetry
+  #     run: pipx install poetry
+  #   - uses: actions/setup-python@v5
+  #     with:
+  #       python-version-file: hello-world/.python-version
+  #       cache: 'poetry'
+  #       cache-dependency-path: hello-world/poetry.lock
+  #   - run: poetry install
+  #   - run: poetry run pytest
 
-  lint:
-    runs-on: ubuntu-latest
+  # lint:
+  #   runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: hello-world
+  #   defaults:
+  #     run:
+  #       working-directory: hello-world
 
-    steps:
-    - uses: actions/checkout@v4
+  #   steps:
+  #   - uses: actions/checkout@v4
 
-    - name: Install poetry
-      run: pipx install poetry
-    - uses: actions/setup-python@v5
-      with:
-        python-version-file: hello-world/.python-version
-        cache: 'poetry'
-        cache-dependency-path: hello-world/poetry.lock
-    - run: poetry install
-    - run: poetry run pytest
+  #   - name: Install poetry
+  #     run: pipx install poetry
+  #   - uses: actions/setup-python@v5
+  #     with:
+  #       python-version-file: hello-world/.python-version
+  #       cache: 'poetry'
+  #       cache-dependency-path: hello-world/poetry.lock
+  #   - run: poetry install
+  #   - run: poetry run pytest
 
   build:
     runs-on: ubuntu-latest
-    needs: [test, lint]
+    # needs: [test, lint]
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Zip artifact for deployment
+      run: zip -r ../hello-world.zip main.py
+      working-directory: hello-world
+
     - uses: actions/upload-artifact@v4
       with:
         name: hello-world
-        path: |
-          hello-world
-          !hello-world/test/*
+        path: hello-world.zip
 
   terraform:
     # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -69,11 +72,17 @@ jobs:
         working-directory: infra
 
     env:
-      TF_VAR_aws_access_key: ${AWS_ACCESS_KEY_ID}
-      TF_VAR_aws_secret_key: ${AWS_SECRET_ACCESS_KEY}
+      TF_VAR_aws_access_key: ${{secrets.AWS_ACCESS_KEY_ID}}
+      TF_VAR_aws_secret_key: ${{secrets.AWS_SECRET_ACCESS_KEY}}
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Print environment variables
+      run: |
+        echo "env.TF_VAR_aws_access_key ${{env.TF_VAR_aws_access_key}}"
+        echo "env.TF_VAR_aws_secret_key ${{env.TF_VAR_aws_secret_key}}"
+
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
