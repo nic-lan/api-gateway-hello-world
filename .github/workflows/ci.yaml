@@ -2,15 +2,16 @@ name: CI
 
 on:
   pull_request:
+  push:
     branches: main
-
-defaults:
-  run:
-    working-directory: hello-world
 
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: hello-world
 
     steps:
     - uses: actions/checkout@v4
@@ -28,6 +29,10 @@ jobs:
   lint:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: hello-world
+
     steps:
     - uses: actions/checkout@v4
 
@@ -40,3 +45,54 @@ jobs:
         cache-dependency-path: hello-world/poetry.lock
     - run: poetry install
     - run: poetry run pytest
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/upload-artifact@v4
+      with:
+        name: hello-world
+        path: |
+          hello-world
+          !hello-world/test/*
+
+  terraform:
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: infra
+
+    env:
+      TF_VAR_aws_access_key: ${AWS_ACCESS_KEY_ID}
+      TF_VAR_aws_secret_key: ${AWS_SECRET_ACCESS_KEY}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: hello-world
+        path: hello-world.zip
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Validate
+      run: terraform validate
+
+    - name: Terraform Plan
+      run: terraform plan
+
+    - name: Manual Approval
+      run: echo "Manual approval required. Please review the plan above and approve if it is correct."
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
