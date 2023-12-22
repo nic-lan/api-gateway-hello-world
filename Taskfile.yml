@@ -5,16 +5,16 @@ dotenv: ['.env', '{{.ENV}}/.env.', '{{.HOME}}/.env']
 tasks:
   init:
     cmds:
-    - terraform init
+    - cd infra && terraform init
   deploy:
     cmds:
-    - terraform apply
+    - cd infra && terraform apply
   destroy:
-    - terraform destroy
+    - cd infra && terraform destroy
 
   invoke-gateway:
     cmds:
-    - curl "$(terraform output -raw base_url)/hello"
+    - curl "$(cd infra && terraform output -raw base_url)/hello"
 
   setup:
     cmds:
