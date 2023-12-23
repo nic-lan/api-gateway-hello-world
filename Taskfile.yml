@@ -5,12 +5,12 @@ dotenv: ['.env', '{{.ENV}}/.env.', '{{.HOME}}/.env']
 tasks:
   init:
     cmds:
-    - cd infra && terraform init
+    - cd main-infra && terraform init
   deploy:
     cmds:
-    - cd infra && terraform apply
+    - cd main-infra && terraform apply
   destroy:
-    - cd infra && terraform destroy
+    - cd main-infra && terraform destroy
 
   invoke-gateway:
     cmds:
