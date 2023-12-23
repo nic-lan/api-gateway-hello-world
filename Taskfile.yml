@@ -14,7 +14,7 @@ tasks:
 
   invoke-gateway:
     cmds:
-    - curl "$(cd infra && terraform output -raw base_url)/hello"
+    - curl "https://oefjjuylog.execute-api.us-east-1.amazonaws.com/serverless_lambda_stage/hello"
 
   setup:
     cmds:
