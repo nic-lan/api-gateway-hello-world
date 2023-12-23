@@ -2,15 +2,16 @@ name: CI
 
 on:
   pull_request:
+  push:
     branches: main
-
-defaults:
-  run:
-    working-directory: hello-world
 
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: hello-world
 
     steps:
     - uses: actions/checkout@v4
@@ -28,6 +29,10 @@ jobs:
   lint:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: hello-world
+
     steps:
     - uses: actions/checkout@v4
 
@@ -40,3 +45,133 @@ jobs:
         cache-dependency-path: hello-world/poetry.lock
     - run: poetry install
     - run: poetry run pytest
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Zip artifact for deployment
+      run: zip -r ../hello-world.zip main.py
+      working-directory: hello-world
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: hello-world
+        path: hello-world.zip
+
+  terraform-state-bucket:
+    runs-on: ubuntu-latest
+    outputs:
+      bucket_name: ${{ steps.fetch-bucket-name.outputs.bucket_name }}
+    steps:
+    - name: Setup AWS CLI
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1  # replace with your actual region
+
+    - name: Fetch Bucket Name
+      id: fetch-bucket-name
+      run: |
+        bucket_name=$(aws s3api list-buckets --query 'Buckets[?starts_with(Name, `terraform-state`)].Name' --output text | tr -d '[:space:]')
+        echo "Bucket name: $bucket_name"
+        if [ -z "$bucket_name" ]; then
+          echo "Bucket name is empty. Please check the AWS CLI command."
+          exit 1
+        fi
+        echo "bucket_name=$bucket_name" >> $GITHUB_OUTPUT
+
+  plan-deploy:
+    runs-on: ubuntu-latest
+    needs: [build, terraform-state-bucket]
+
+    defaults:
+      run:
+        working-directory: infra
+
+    env:
+      TF_VAR_aws_access_key: ${{secrets.AWS_ACCESS_KEY_ID}}
+      TF_VAR_aws_secret_key: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: hello-world
+        path: infra/
+
+    - name: Setup AWS CLI
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Terraform Init
+      run: |
+        terraform init \
+          -backend-config="bucket=${{ needs.terraform-state-bucket.outputs.bucket_name }}" \
+          -backend-config="access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+          -backend-config="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+          -backend-config="region=us-east-1"
+
+    - name: Terraform Validate
+      run: terraform validate
+
+    - name: Terraform Plan
+      run: terraform plan
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    runs-on: ubuntu-latest
+    needs: [plan-deploy]
+
+    defaults:
+      run:
+        working-directory: infra
+
+    env:
+      TF_VAR_aws_access_key: ${{secrets.AWS_ACCESS_KEY_ID}}
+      TF_VAR_aws_secret_key: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: hello-world
+        path: infra/
+
+    - name: Setup AWS CLI
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Terraform Init
+      run: |
+        terraform init \
+          -backend-config="bucket=${{ needs.terraform-state-bucket.outputs.bucket_name }}" \
+          -backend-config="access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+          -backend-config="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+          -backend-config="region=us-east-1"
+
+    - name: Terraform Validate
+      run: terraform validate
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
+
