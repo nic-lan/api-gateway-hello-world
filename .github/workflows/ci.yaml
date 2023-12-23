@@ -83,7 +83,7 @@ jobs:
           echo "Bucket name is empty. Please check the AWS CLI command."
           exit 1
         fi
-        echo "::set-output name=bucket_name::$bucket_name"
+        echo "bucket_name=$bucket_name" >> $GITHUB_OUTPUT
 
   deploy:
     # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
