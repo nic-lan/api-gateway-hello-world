@@ -6,49 +6,49 @@ on:
     branches: main
 
 jobs:
-  # test:
-  #   runs-on: ubuntu-latest
+  test:
+    runs-on: ubuntu-latest
 
-  #   defaults:
-  #     run:
-  #       working-directory: hello-world
+    defaults:
+      run:
+        working-directory: hello-world
 
-  #   steps:
-  #   - uses: actions/checkout@v4
+    steps:
+    - uses: actions/checkout@v4
 
-  #   - name: Install poetry
-  #     run: pipx install poetry
-  #   - uses: actions/setup-python@v5
-  #     with:
-  #       python-version-file: hello-world/.python-version
-  #       cache: 'poetry'
-  #       cache-dependency-path: hello-world/poetry.lock
-  #   - run: poetry install
-  #   - run: poetry run pytest
+    - name: Install poetry
+      run: pipx install poetry
+    - uses: actions/setup-python@v5
+      with:
+        python-version-file: hello-world/.python-version
+        cache: 'poetry'
+        cache-dependency-path: hello-world/poetry.lock
+    - run: poetry install
+    - run: poetry run pytest
 
-  # lint:
-  #   runs-on: ubuntu-latest
+  lint:
+    runs-on: ubuntu-latest
 
-  #   defaults:
-  #     run:
-  #       working-directory: hello-world
+    defaults:
+      run:
+        working-directory: hello-world
 
-  #   steps:
-  #   - uses: actions/checkout@v4
+    steps:
+    - uses: actions/checkout@v4
 
-  #   - name: Install poetry
-  #     run: pipx install poetry
-  #   - uses: actions/setup-python@v5
-  #     with:
-  #       python-version-file: hello-world/.python-version
-  #       cache: 'poetry'
-  #       cache-dependency-path: hello-world/poetry.lock
-  #   - run: poetry install
-  #   - run: poetry run pytest
+    - name: Install poetry
+      run: pipx install poetry
+    - uses: actions/setup-python@v5
+      with:
+        python-version-file: hello-world/.python-version
+        cache: 'poetry'
+        cache-dependency-path: hello-world/poetry.lock
+    - run: poetry install
+    - run: poetry run pytest
 
   build:
     runs-on: ubuntu-latest
-    # needs: [test, lint]
+    needs: [test, lint]
 
     steps:
     - uses: actions/checkout@v4
@@ -86,7 +86,6 @@ jobs:
         echo "bucket_name=$bucket_name" >> $GITHUB_OUTPUT
 
   deploy:
-    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: [build, terraform-state-bucket]
 
@@ -114,7 +113,7 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1  # replace with your actual region
+        aws-region: us-east-1
 
     - name: Terraform Init
       run: |
@@ -132,3 +131,5 @@ jobs:
 
     - name: Terraform Apply
       run: terraform apply -auto-approve
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
