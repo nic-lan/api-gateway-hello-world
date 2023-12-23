@@ -2,6 +2,10 @@ version: '3'
 
 dotenv: ['.env', '{{.ENV}}/.env.', '{{.HOME}}/.env']
 
+env:
+  TF_VAR_aws_access_key: "{{.AWS_ACCESS_KEY_ID}}"
+  TF_VAR_aws_secret_key: "{{.AWS_SECRET_ACCESS_KEY}}"
+
 tasks:
   init:
     cmds:
@@ -14,10 +18,9 @@ tasks:
 
   invoke-gateway:
     cmds:
-    - curl "https://oefjjuylog.execute-api.us-east-1.amazonaws.com/serverless_lambda_stage/hello"
+    - curl $(aws apigatewayv2 get-apis --query 'Items[0].ApiEndpoint' --output text | tr -d ' \t\n')/serverless_lambda_stage/hello
 
   setup:
     cmds:
     - task: init
     - task: deploy
-    - task: invoke-gateway
