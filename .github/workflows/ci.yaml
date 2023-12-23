@@ -62,7 +62,7 @@ jobs:
         name: hello-world
         path: hello-world.zip
 
-  requirements:
+  terraform-state-bucket:
     runs-on: ubuntu-latest
     outputs:
       bucket_name: ${{ steps.fetch-bucket-name.outputs.bucket_name }}
@@ -85,10 +85,10 @@ jobs:
         fi
         echo "::set-output name=bucket_name::$bucket_name"
 
-  terraform:
+  deploy:
     # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    needs: [build, requirements]
+    needs: [build, terraform-state-bucket]
 
     defaults:
       run:
@@ -119,7 +119,7 @@ jobs:
     - name: Terraform Init
       run: |
         terraform init \
-          -backend-config="bucket=${{ needs.requirements.outputs.bucket_name }}" \
+          -backend-config="bucket=${{ needs.terraform-state-bucket.outputs.bucket_name }}" \
           -backend-config="access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
           -backend-config="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
           -backend-config="region=us-east-1"
