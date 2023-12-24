@@ -76,7 +76,7 @@ The prerequisites are the same  at [Setup Main Infra](#setup-main-infra).
 If your favourite way to see the code in action is to run terraform locally, please run:
 
 ```bash
-task setup -- infra
+task setup -- api-infra
 ```
 
 ## Invoke The API Gateway
