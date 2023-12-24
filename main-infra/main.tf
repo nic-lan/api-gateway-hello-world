@@ -12,9 +12,11 @@ resource "random_pet" "terraform_state_bucket_name" {
 resource "aws_s3_bucket" "terraform_state" {
   bucket = random_pet.terraform_state_bucket_name.id
 
-  lifecycle {
-    prevent_destroy = true
-  }
+  # Commented out for simplicity
+  #
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
 }
 
 resource "aws_s3_bucket_acl" "terraform_state_acl" {
@@ -23,14 +25,16 @@ resource "aws_s3_bucket_acl" "terraform_state_acl" {
   depends_on = [aws_s3_bucket_ownership_controls.s3_bucket_acl_ownership]
 }
 
+# The S3 should have versionining enabled.
+# Commented out for simplicity
+#
+# resource "aws_s3_bucket_versioning" "terraform_state_versioning" {
+#   bucket = aws_s3_bucket.terraform_state.id
 
-resource "aws_s3_bucket_versioning" "terraform_state_versioning" {
-  bucket = aws_s3_bucket.terraform_state.id
-
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
+#   versioning_configuration {
+#     status = "Enabled"
+#   }
+# }
 
 # Resource to avoid error "AccessControlListNotSupported: The bucket does not allow ACLs"
 resource "aws_s3_bucket_ownership_controls" "s3_bucket_acl_ownership" {
@@ -50,7 +54,9 @@ resource "aws_dynamodb_table" "dynamodb_terraform_state_lock" {
     type = "S"
   }
 
-  lifecycle {
-    prevent_destroy = true
-  }
+  # Commented out for simplicity
+  #
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
 }
