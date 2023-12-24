@@ -7,9 +7,9 @@ env:
   TF_VAR_aws_secret_key: "{{.AWS_SECRET_ACCESS_KEY}}"
 
 tasks:
-  infra-init:
+  api-infra-init:
     cmds:
-    - cd hello-world && zip -r ../infra/hello-world.zip main.py
+    - cd hello-world && zip -r ../{{.CLI_ARGS}}/hello-world.zip main.py
     - |
       cd {{.CLI_ARGS}} &&\
       bucket_name=$(aws s3api list-buckets --query 'Buckets[?starts_with(Name, `terraform-state`)].Name' --output text | tr -d ' \t\n') &&\
