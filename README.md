@@ -75,6 +75,8 @@ The CI is a github action, so if you would like to take advantage of fully autom
 
 The prerequisites are the same  at [Setup Main Infra](#setup-main-infra).
 
+Also, please grab the AWS credentials for the `terraform_api_user` created by running [Setup Main Infra](#setup-main-infra) and save them in the `api-infra/.env` so that they will be loaded by `Task`.
+
 If your favourite way to see the code in action is to run terraform locally, please run:
 
 ```bash
@@ -83,7 +85,7 @@ task setup -- api-infra
 
 ### Invoke The API Gateway
 
-The prerequisites are the same  at [Setup Main Infra](#setup-main-infra).
+The prerequisites are the same  at [Setup Main Infra](#setup-main-infra). Also you will need `curl`.
 
 Once the CI has successfully deployed the API Gateway, you can invoke the end point and received your "Hello World" message.
 
