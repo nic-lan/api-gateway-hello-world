@@ -1,35 +1,49 @@
 version: '3'
 
-dotenv: ['.env', '{{.ENV}}/.env.', '{{.HOME}}/.env']
-
-env:
-  TF_VAR_aws_access_key: "{{.AWS_ACCESS_KEY_ID}}"
-  TF_VAR_aws_secret_key: "{{.AWS_SECRET_ACCESS_KEY}}"
-
 tasks:
   api-infra-init:
+    dotenv: ['api-infra/.env']
+    env:
+      TF_VAR_aws_access_key: "{{.AWS_ACCESS_KEY_ID}}"
+      TF_VAR_aws_secret_key: "{{.AWS_SECRET_ACCESS_KEY}}"
     cmds:
     - cd hello-world && zip -r ../{{.CLI_ARGS}}/hello-world.zip main.py
     - |
-      cd {{.CLI_ARGS}} &&\
+      cd api-infra &&\
       bucket_name=$(aws s3api list-buckets --query 'Buckets[?starts_with(Name, `terraform-state`)].Name' --output text | tr -d ' \t\n') &&\
       terraform init \
         -backend-config="bucket=$bucket_name" \
         -backend-config="access_key={{ .AWS_ACCESS_KEY_ID }}" \
         -backend-config="secret_key={{ .AWS_SECRET_ACCESS_KEY }}" \
-        -backend-config="region=us-east-1"
+        -backend-config="region={{ .AWS_REGION }}"
 
   main-infra-init:
+    dotenv: ['main-infra/.env', '{{.ENV}}/.env.', '{{.HOME}}/.env']
+    env:
+      TF_VAR_aws_access_key: "{{.AWS_ACCESS_KEY_ID}}"
+      TF_VAR_aws_secret_key: "{{.AWS_SECRET_ACCESS_KEY}}"
     cmds:
-    - terraform init
+    - cd {{.CLI_ARGS}} && terraform init
 
   deploy:
+    dotenv: ['{{.CLI_ARGS}}/.env']
+    env:
+      TF_VAR_aws_access_key: "{{.AWS_ACCESS_KEY_ID}}"
+      TF_VAR_aws_secret_key: "{{.AWS_SECRET_ACCESS_KEY}}"
     cmds:
-    - cd {{.CLI_ARGS}} && terraform apply
+    - cd {{.CLI_ARGS}} && terraform apply --auto-approve
+
   destroy:
-    - cd {{.CLI_ARGS}} && terraform destroy
+    dotenv: ['main-infra/.env']
+    env:
+      TF_VAR_aws_access_key: "{{.AWS_ACCESS_KEY_ID}}"
+      TF_VAR_aws_secret_key: "{{.AWS_SECRET_ACCESS_KEY}}"
+    cmds:
+    - |
+      cd {{.CLI_ARGS}} && terraform destroy
 
   invoke-gateway:
+    dotenv: ['main-infra/.env']
     cmds:
     - curl $(aws apigatewayv2 get-apis --query 'Items[0].ApiEndpoint' --output text | tr -d ' \t\n')/serverless_lambda_stage/hello
 
